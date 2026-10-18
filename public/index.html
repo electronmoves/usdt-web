@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F3470">
+<title>TrustedMiners</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0A2347;--navy:#0F3470;--royal:#1F5FD6;--sky:#5B9BFF;--ice:#EAF2FF;--mist:#F5F9FF;--line:#D6E3F7;--mut:#5B6F8F}
+*{box-sizing:border-box;margin:0}
+body{font-family:Figtree,system-ui,sans-serif;background:var(--mist);color:var(--ink);min-height:100vh}
+.wrap{max-width:1080px;margin:0 auto;padding:16px;padding-top:max(16px,env(safe-area-inset-top))}
+header{display:flex;justify-content:space-between;align-items:center;padding:4px 0 18px}
+.logo{display:flex;align-items:center;gap:10px;font-family:Sora,sans-serif;font-weight:700;font-size:19px;color:var(--navy)}
+.logo svg{width:30px;height:30px}
+.tick{background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--navy)}
+.tick i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--sky);margin-right:8px;box-shadow:0 0 0 4px rgba(91,155,255,.25)}
+.cols{display:grid;gap:20px}
+@media(min-width:960px){.cols{grid-template-columns:1fr 400px;align-items:start}.wrap{padding:28px 24px}}
+
+/* balance vault */
+.vault{position:relative;overflow:hidden;border-radius:26px;padding:28px;color:#fff;
+ background:linear-gradient(140deg,#0A2347 0%,#0F3470 55%,#1F5FD6 130%);box-shadow:0 18px 40px -18px rgba(15,52,112,.7)}
+.vault:before{content:"";position:absolute;inset:0;opacity:.14;
+ background-image:linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px);background-size:34px 34px;
+ -webkit-mask-image:linear-gradient(115deg,transparent 35%,#000);mask-image:linear-gradient(115deg,transparent 35%,#000)}
+.vault>*{position:relative}
+.vault .lbl{font-size:14px;opacity:.75}
+.vault .num{font-family:Sora,sans-serif;font-weight:700;font-size:clamp(40px,9vw,58px);margin:10px 0 2px;letter-spacing:-1px}
+.vault .num small{font-size:20px;color:var(--sky);margin-left:6px;letter-spacing:0}
+.vault .sub{opacity:.8;font-size:16px}
+.rates{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.rates>span{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:8px 12px;font-size:13px}
+.rates b{font-weight:700}
+
+.scan{margin:16px 0;border-radius:20px;padding:20px;display:flex;align-items:center;gap:16px;background:#fff;border:1px solid var(--line);cursor:pointer}
+.ico{width:46px;height:46px;border-radius:14px;background:var(--ice);display:grid;place-items:center;flex:none}
+.ico svg{width:24px;height:24px;stroke:var(--royal);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.scan b{font-size:18px;display:block}.scan p{color:var(--mut);font-size:14px;margin-top:2px}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(min-width:560px){.acts{grid-template-columns:repeat(4,1fr)}}
+.act{display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding:18px;border-radius:18px;border:1px solid var(--line);background:#fff;
+ font:600 16px Figtree,sans-serif;color:var(--ink);cursor:pointer;text-align:left;transition:transform .15s,border-color .15s}
+.act:hover{transform:translateY(-2px);border-color:var(--sky)}
+.act.main{background:var(--royal);border-color:var(--royal);color:#fff}
+.act.main .ico{background:rgba(255,255,255,.18)}.act.main .ico svg{stroke:#fff}
+.trust{display:flex;gap:8px;align-items:center;color:var(--mut);font-size:13px;margin-top:18px}
+.trust svg{width:16px;height:16px;stroke:var(--royal);fill:none;stroke-width:2}
+
+/* order panel: bottom sheet on phones, fixed side card on PC */
+.sheet{position:fixed;inset:0;z-index:9;background:rgba(10,35,71,.55);display:none;align-items:flex-end}
+.sheet.on{display:flex}
+.flow{width:100%;background:#fff;border-radius:26px 26px 0 0;padding:24px;padding-bottom:max(24px,env(safe-area-inset-bottom));animation:up .25s ease-out;max-height:92vh;max-height:92dvh;overflow-y:auto}
+@keyframes up{from{transform:translateY(30px);opacity:0}}
+@media(min-width:960px){.sheet{position:sticky;top:24px;display:block;background:none;z-index:1}
+ .flow{border-radius:26px;border:1px solid var(--line);box-shadow:0 14px 34px -22px rgba(15,52,112,.5);animation:none}}
+.flow h2{font-family:Sora,sans-serif;font-size:22px;color:var(--navy)}
+.mut{color:var(--mut);font-size:14px}
+.field{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:16px;background:var(--mist);margin:18px 0 12px;padding:0 16px}
+.field:focus-within{border-color:var(--royal);box-shadow:0 0 0 4px rgba(31,95,214,.15)}
+.field span{font:700 22px Sora,sans-serif;color:var(--mut)}
+.field input{flex:1;border:0;background:none;outline:0;padding:16px 10px;font:600 24px Sora,sans-serif;color:var(--ink);width:100%}
+.chips{display:flex;gap:8px;margin-bottom:14px}
+.chips button{flex:1;padding:9px;border-radius:12px;border:1px solid var(--line);background:#fff;font:600 14px Figtree;color:var(--navy);cursor:pointer}
+.chips button:hover{background:var(--ice)}
+.get{display:flex;justify-content:space-between;background:var(--ice);border-radius:14px;padding:14px 16px;font-weight:600}
+.get b{font-family:Sora,sans-serif;color:var(--royal)}
+.err{background:#FDECEA;color:#8C1D18;border:1px solid #F5C2BE;border-radius:12px;padding:10px 12px;font-weight:600;font-size:14px;margin-top:10px}.err:empty{display:none}
+.cta{width:100%;padding:16px;border:0;border-radius:16px;background:var(--royal);color:#fff;font:700 17px Figtree;margin-top:10px;cursor:pointer}
+.cta:hover{background:#1850b8}.cta.alt{background:var(--ice);color:var(--navy)}
+:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+.center{text-align:center}
+.steps{display:flex;justify-content:space-between;margin:22px 0 10px;position:relative}
+.steps:before{content:"";position:absolute;left:12%;right:12%;top:13px;height:3px;background:var(--line)}
+.st{position:relative;flex:1;font-size:12px;color:var(--mut);font-weight:600}
+.st i{display:block;width:28px;height:28px;border-radius:50%;background:#fff;border:3px solid var(--line);margin:0 auto 8px}
+.st.done i{background:var(--royal);border-color:var(--royal)}
+.st.now i{border-color:var(--royal);animation:pulse 1.4s infinite}.st.done,.st.now{color:var(--navy)}
+@keyframes pulse{50%{box-shadow:0 0 0 7px rgba(31,95,214,.2)}}
+.tick-ok{width:78px;height:78px;border-radius:50%;background:var(--royal);margin:6px auto 16px;display:grid;place-items:center;animation:pop .4s cubic-bezier(.3,1.6,.5,1)}
+.tick-ok svg{width:38px;height:38px;stroke:#fff;fill:none;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+@keyframes pop{from{transform:scale(.3)}}
+.box{background:var(--mist);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:14px 0 4px;font-size:14px;text-align:left;line-height:1.7}
+.box b{float:right}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.left{display:flex;align-items:center;gap:12px}
+.burger{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;cursor:pointer}
+.burger svg{width:22px;height:22px;stroke:var(--navy);fill:none;stroke-width:2;stroke-linecap:round}
+.dbg{position:fixed;inset:0;background:rgba(10,35,71,.5);opacity:0;pointer-events:none;transition:opacity .2s;z-index:19}
+.drawer{position:fixed;top:0;bottom:0;left:0;width:min(300px,84vw);background:#fff;z-index:20;transform:translateX(-100%);transition:transform .25s ease;padding:22px 14px;padding-top:max(22px,env(safe-area-inset-top));display:flex;flex-direction:column;gap:6px;box-shadow:12px 0 40px -20px rgba(10,35,71,.5)}
+.menu-on .dbg{opacity:1;pointer-events:auto}.menu-on .drawer{transform:none}
+.drawer .logo{margin-bottom:18px;padding:0 8px}
+.mi{display:flex;align-items:center;gap:14px;padding:12px;border-radius:14px;border:0;background:none;font:600 16px Figtree,sans-serif;color:var(--ink);cursor:pointer;text-align:left}
+.mi:hover{background:var(--ice)}
+.ord{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px;border:1px solid var(--line);border-radius:14px;margin-top:10px;background:#fff;width:100%;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.ord:hover{border-color:var(--sky)}
+.ord b{display:block;font-family:Sora,sans-serif}.ord small{color:var(--mut)}
+.badge{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;white-space:nowrap}
+.badge.processing{background:var(--ice);color:var(--royal)}.badge.completed{background:var(--royal);color:#fff}.badge.cancelled{background:#EEF1F6;color:var(--mut)}
+.olist{max-height:55vh;overflow:auto;margin-bottom:6px}
+.stars{display:flex;gap:6px;justify-content:center;margin:16px 0}
+.stars button{border:0;background:none;font-size:38px;line-height:1;color:var(--line);cursor:pointer}
+.stars button.on{color:var(--royal)}
+textarea{width:100%;min-height:96px;border:1.5px solid var(--line);border-radius:14px;background:var(--mist);padding:14px;font:500 15px Figtree,sans-serif;color:var(--ink);resize:vertical}
+textarea:focus{outline:0;border-color:var(--royal);box-shadow:0 0 0 4px rgba(31,95,214,.15)}
+.sup{display:block;padding:15px;border:1px solid var(--line);border-radius:14px;margin-top:12px;text-decoration:none;color:var(--ink);font-weight:600;background:#fff}
+.sup:hover{border-color:var(--sky)}
+.offline{background:#FDECEA;color:#8C1D18;border:1px solid #F5C2BE;border-radius:12px;padding:12px 14px;font-weight:600;font-size:14px;margin-bottom:14px;line-height:1.5}
+.payq{margin:16px 0 4px}
+.payq img{width:200px;height:200px;border:1px solid var(--line);border-radius:16px;padding:6px;background:#fff}
+.upiid{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--ice);border-radius:12px;padding:10px 14px;margin:12px 0;font-weight:600;word-break:break-all;text-align:left}
+.upiid button{flex:none;white-space:nowrap;word-break:normal;border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 12px;font:600 13px Figtree,sans-serif;color:var(--navy);cursor:pointer}
+.utr{margin-top:14px;text-align:left}
+.utr input{width:100%;margin-top:8px;padding:14px;border:1.5px solid var(--line);border-radius:14px;background:var(--mist);font:600 18px Sora,sans-serif;letter-spacing:1px;color:var(--ink)}
+.utr input:focus{outline:0;border-color:var(--royal);box-shadow:0 0 0 4px rgba(31,95,214,.15)}
+.tag{margin-left:auto;font-size:12px;font-weight:700;color:var(--mut);background:var(--ice);padding:4px 10px;border-radius:999px;white-space:nowrap}
+.act.off{color:var(--mut)}.act.off .ico,.scan.off .ico{opacity:.55}.scan.off b{color:var(--mut)}
+.warn{background:var(--ice);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.6;margin:12px 0;text-align:left}
+.tick{white-space:nowrap}
+@media(max-width:400px){.logo{font-size:17px}.tick{font-size:12px;padding:7px 10px}}
+.tick{position:relative;overflow:hidden;width:138px;height:36px;padding:0}
+.fl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:6px;opacity:0;animation:flip 4s ease-in-out infinite;white-space:nowrap}
+.fl.s{animation-delay:2s}
+.fl b{font-family:Sora,sans-serif;font-size:14px}
+.ar{font-style:normal;font-size:11px;display:inline-block;color:var(--royal);animation:bob 1s ease-in-out infinite}
+.fl.s .ar{color:var(--sky);animation-direction:reverse}
+.rates>span{display:inline-flex;align-items:center;gap:6px}
+.rates .ar{color:#9CC2FF}
+.rb,.rs{animation:glow 3s ease-in-out infinite}.rs{animation-delay:1.5s}
+@keyframes flip{0%{opacity:0;transform:translateY(70%)}6%,44%{opacity:1;transform:none}50%,100%{opacity:0;transform:translateY(-70%)}}
+@keyframes bob{50%{transform:translateY(-3px)}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(91,155,255,0);background:rgba(255,255,255,.12)}20%,45%{box-shadow:0 0 22px 2px rgba(91,155,255,.55);background:rgba(91,155,255,.32);transform:translateY(-2px)}}
+@media(prefers-reduced-motion:reduce){.fl.s{display:none}.fl{opacity:1!important;transform:none!important}}
+.mini{flex:none;border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 12px;font:600 13px Figtree,sans-serif;color:var(--navy);cursor:pointer}
+.auth{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:20px;overflow-y:auto;background:linear-gradient(160deg,#0A2347,#0F3470 60%,#1F5FD6)}
+.auth.on{display:flex}
+.acard{background:#fff;border-radius:26px;padding:26px;width:100%;max-width:400px;box-shadow:0 30px 60px -30px rgba(0,0,0,.6)}
+.tabs{display:flex;background:var(--ice);border-radius:14px;padding:4px;margin:18px 0 14px}
+.tabs button{flex:1;border:0;background:none;padding:11px;border-radius:11px;font:700 15px Figtree,sans-serif;color:var(--mut);cursor:pointer}
+.tabs button.on{background:#fff;color:var(--navy);box-shadow:0 2px 8px rgba(15,52,112,.15)}
+.acard input{width:100%;padding:15px;margin-bottom:10px;border:1.5px solid var(--line);border-radius:14px;background:var(--mist);font:500 16px Figtree,sans-serif;color:var(--ink)}
+.acard input:focus{outline:0;border-color:var(--royal);box-shadow:0 0 0 4px rgba(31,95,214,.15)}
+.pw{position:relative}.pw input{padding-right:70px}
+.pw .eye{position:absolute;right:10px;top:9px;border:0;background:none;color:var(--royal);font:700 13px Figtree,sans-serif;cursor:pointer;padding:8px}
+.who{color:var(--mut);font-size:13px;padding:0 8px 12px;word-break:break-all}
+.badge.failed{background:#FDECEA;color:#8C1D18}
+.ord small{display:block}.ord small.why{color:#8C1D18;margin-top:2px}
+[hidden]{display:none!important}
+.lnk{display:block;width:100%;margin-top:12px;border:0;background:none;color:var(--royal);font:600 14px Figtree,sans-serif;cursor:pointer;padding:6px}
+.aok{background:var(--ice);color:var(--navy);border-radius:12px;padding:10px 12px;font-weight:600;font-size:14px;margin-top:10px}.aok:empty{display:none}
+.pin{width:100%;padding:15px;margin-top:12px;border:1.5px solid var(--line);border-radius:14px;background:var(--mist);font:500 16px Figtree,sans-serif;color:var(--ink)}
+.pin:focus{outline:0;border-color:var(--royal);box-shadow:0 0 0 4px rgba(31,95,214,.15)}
+/* stylish confirmation popup */
+.mdl{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(10,35,71,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fade .2s}
+.mcard{width:100%;max-width:380px;background:#fff;border-radius:28px;padding:26px 22px 22px;box-shadow:0 30px 70px -20px rgba(10,35,71,.6);animation:pop2 .3s cubic-bezier(.2,1.2,.4,1)}
+@keyframes fade{from{opacity:0}}@keyframes pop2{from{opacity:0;transform:translateY(16px) scale(.93)}}
+.mic{width:58px;height:58px;border-radius:19px;background:var(--ice);display:grid;place-items:center;margin:0 auto 14px}
+.mic svg{width:28px;height:28px;stroke:var(--royal);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.mic.danger{background:#FDECEA}.mic.danger svg{stroke:#B3261E}
+.mcard h3{font:700 20px Sora,sans-serif;text-align:center;color:var(--navy)}
+.mrows{margin:16px 0 4px;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.mrows div{display:flex;justify-content:space-between;gap:14px;padding:12px 14px;font-size:14px;border-bottom:1px solid var(--line)}
+.mrows div:last-child{border:0}.mrows span{color:var(--mut);flex:none}
+.mrows b{text-align:right;word-break:break-all;font-family:Sora,sans-serif;font-size:13.5px}
+.mnote{color:var(--mut);font-size:13px;line-height:1.5;margin:12px 4px 0;text-align:center}
+.mbtns{display:flex;gap:10px;margin-top:18px}.mbtns .cta{margin-top:0}
+</style></head><body>
+<div class="wrap">
+  <header>
+    <div class="left"><button class="burger" onclick="openMenu()" aria-label="Open menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><div class="logo"><svg viewBox="0 0 32 32"><path d="M16 2l12 5v8c0 8-5 13-12 15C9 28 4 23 4 15V7z" fill="#0F3470"/><path d="M10 15l4 4 8-8" stroke="#5B9BFF" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>TrustedMiners</div></div>
+    <div class="tick" aria-label="Buy price and sell price"><div class="fl"><em class="ar">▲</em><span>Buy <b>₹<span class="pbuy">102.5</span></b></span></div><div class="fl s"><em class="ar">▼</em><span>Sell <b>₹<span class="psell">100</span></b></span></div></div>
+  </header>
+  <div class="offline" id="offline" hidden>Not connected to the server. Run <b>npm start</b>, then open <b>http://localhost:3000</b> in your browser. Do not open this file directly or with Live Preview.</div>
+
+  <div class="cols">
+    <main>
+      <section class="vault">
+        <div class="lbl">Your balance</div>
+        <div class="num"><span id="usdt">0.00</span><small>USDT</small></div>
+        <div class="sub">≈ ₹<span id="inr">0.00</span></div>
+        <div class="rates"><span class="rb"><em class="ar">▲</em>Buy <b>₹<span class="pbuy">102.5</span></b></span><span class="rs"><em class="ar">▼</em>Sell <b>₹<span class="psell">100</span></b></span></div>
+      </section>
+
+      <div class="scan off" onclick="menuGo(()=>showUnavailable('Scan &amp; Pay'))"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 011-1h3M16 4h3a1 1 0 011 1v3M20 16v3a1 1 0 01-1 1h-3M8 20H5a1 1 0 01-1-1v-3M8 8h3v3H8zM13 13h3v3h-3z"/></svg></div>
+        <div><b>Scan &amp; Pay</b><p>Pay at any shop with your USDT</p></div><span class="tag">Unavailable</span></div>
+
+      <div class="acts">
+        <button class="act main" onclick="openBuy()"><span class="ico"><svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg></span>Buy USDT</button>
+        <button class="act off" onclick="menuGo(()=>showUnavailable('Sell USDT'))"><span class="ico"><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></span>Sell USDT<span class="tag">Unavailable</span></button>
+        <button class="act" onclick="menuGo(showDeposit)"><span class="ico"><svg viewBox="0 0 24 24"><path d="M3 10h18M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18M12 3l9 5H3z"/></svg></span>Deposit</button>
+        <button class="act" onclick="menuGo(showWithdraw)"><span class="ico"><svg viewBox="0 0 24 24"><path d="M4 7h16v12H4zM4 7l2-3h12l2 3M15 13h3"/></svg></span>Withdraw</button>
+      </div>
+      <p class="trust"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>Payments are confirmed by our payment partner before your balance changes.</p>
+    </main>
+
+    <aside class="sheet" id="sheet"><div class="flow" id="flow"></div></aside>
+  </div>
+</div>
+
+<div class="mdl" id="mdl" hidden><div class="mcard" id="mcard"></div></div>
+<div class="auth" id="auth" role="dialog" aria-modal="true" aria-label="Log in or create an account">
+  <div class="acard">
+    <div class="logo" style="justify-content:center"><svg viewBox="0 0 32 32"><path d="M16 2l12 5v8c0 8-5 13-12 15C9 28 4 23 4 15V7z" fill="#0F3470"/><path d="M10 15l4 4 8-8" stroke="#5B9BFF" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>TrustedMiners</div>
+    <div class="tabs" id="tabs"><button id="tabL" class="on" onclick="setAuthMode('login')">Log in</button><button id="tabR" onclick="setAuthMode('register')">Create account</button></div>
+    <input id="aemail" type="email" inputmode="email" autocomplete="email" placeholder="Email address" aria-label="Email address">
+    <input id="acode" type="text" autocomplete="one-time-code" placeholder="Reset code (like K7M2-9PQX)" aria-label="Reset code" hidden style="text-transform:uppercase;letter-spacing:1px">
+    <p class="mut" id="ainfo" style="font-size:13px;margin:0 2px 10px" hidden>Ask support for a one-time reset code. They check it is really you, then send a code that works for 30 minutes.</p>
+    <div class="pw"><input id="apw" type="password" autocomplete="current-password" placeholder="Password (8+ characters)" aria-label="Password" onkeydown="if(event.key==='Enter')submitAuth()"><button type="button" class="eye" onclick="togglePw(this)" aria-label="Show password">Show</button></div>
+    <p class="err" id="aerr" role="alert"></p>
+    <p class="aok" id="aok" role="status"></p>
+    <button class="cta" id="abtn" onclick="submitAuth()">Log in</button>
+    <button class="lnk" id="aforgot" onclick="setAuthMode('reset')">Forgot password?</button>
+    <button class="lnk" id="aback" onclick="setAuthMode('login')" hidden>Back to log in</button>
+    <div id="asup" hidden></div>
+  </div>
+</div>
+<div class="dbg" id="dbg" onclick="closeMenu()"></div>
+<nav class="drawer" id="drawer" aria-label="Menu">
+  <div class="logo"><svg viewBox="0 0 32 32"><path d="M16 2l12 5v8c0 8-5 13-12 15C9 28 4 23 4 15V7z" fill="#0F3470"/><path d="M10 15l4 4 8-8" stroke="#5B9BFF" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>TrustedMiners</div>
+  <div class="who" id="who"></div>
+  <button class="mi" onclick="menuGo(showOrders)"><span class="ico"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg></span>Your orders</button>
+  <button class="mi" onclick="menuGo(showSupport)"><span class="ico"><svg viewBox="0 0 24 24"><path d="M4 13v-1a8 8 0 0116 0v1M4 13h3v5H5a1 1 0 01-1-1zM20 13h-3v5h2a1 1 0 001-1z"/></svg></span>Contact support</button>
+  <button class="mi" onclick="menuGo(showReview)"><span class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg></span>Write a review</button>
+<button class="mi" onclick="menuGo(showPassword)"><span class="ico"><svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0110 0v3M5 11h14v9H5z"/></svg></span>Change password</button>
+  <button class="mi" onclick="logout()" style="margin-top:auto"><span class="ico"><svg viewBox="0 0 24 24"><path d="M9 4H5a1 1 0 00-1 1v14a1 1 0 001 1h4M16 8l4 4-4 4M20 12H9"/></svg></span>Log out</button>
+</nav>
+<script>
+const _fetch=window.fetch;   // if the session ends, any /api call that answers 401 sends the user back to the login screen
+window.fetch=async(...a)=>{const r=await _fetch(...a),u=String(a[0]);if(r.status===401&&u.startsWith('/api/')&&!u.startsWith('/api/auth')&&!u.startsWith('/api/me'))showAuth();return r};
+const $=id=>document.getElementById(id), F=$('flow'), desktop=()=>innerWidth>=960;
+let buyRate=102.5, timer=null, minInr=2500, maxInr=10000, support={}, stars=0;
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let idem=uid();
+let sellRate=100, minUsdt=1, minWd=1, balUsdt=0;
+const fmt=(n,d=2)=>Number(n).toLocaleString('en-IN',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+async function refresh(){
+  try{
+    const [r,b]=await Promise.all([fetch('/api/rate').then(r=>r.json()),fetch('/api/balance').then(r=>r.json())]);
+    buyRate=r.buyRate;sellRate=r.sellRate;minInr=r.min;maxInr=r.max;minUsdt=r.minUsdt;minWd=r.minWithdraw;support=r.support||{};chains=r.chains||[];balUsdt=b.usdt;
+    document.querySelectorAll('.pbuy').forEach(e=>e.textContent=String(+r.buyRate));
+    document.querySelectorAll('.psell').forEach(e=>e.textContent=String(+r.sellRate));
+    $('usdt').textContent=fmt(b.usdt); $('inr').textContent=fmt(b.inrValue);
+    $('offline').hidden=true;
+  }catch(e){$('offline').hidden=false}
+}
+function closeSheet(){clearInterval(timer);timer=null;$('sheet').classList.remove('on');refresh();showBuy()}
+$('sheet').onclick=e=>{if(e.target.id==='sheet'&&!timer&&!desktop())closeSheet()};
+
+function showBuy(){
+  F.innerHTML=`<h2>Buy USDT</h2><p class="mut">₹${fmt(buyRate,1)} for 1 USDT. Minimum ${minUsdt} USDT (₹${fmt(minInr,0)}), maximum ₹${fmt(maxInr,0)}.</p>
+  <label class="field"><span>₹</span><input id="amt" type="number" inputmode="numeric" placeholder="0" aria-label="Amount in rupees" oninput="calc()" onkeydown="if(event.key==='Enter')createOrder()"></label>
+  <div class="chips">${[500,1000,5000].map(v=>`<button onclick="setAmt(${v})">₹${fmt(v,0)}</button>`).join('')}</div>
+  <div class="get"><span>You receive</span><b id="get">0.0000 USDT</b></div>
+  <p class="err" id="err" role="alert"></p>
+  <button class="cta" id="cbtn" onclick="createOrder()">Create order</button>`;
+}
+function openBuy(){showBuy();$('sheet').classList.add('on');setTimeout(()=>$('amt').focus(),50)}
+function setAmt(v){$('amt').value=v;calc()}
+function calc(){$('get').textContent=fmt($('amt').value/buyRate,4)+' USDT'}
+
+function ask({title,rows=[],note='',ok='Confirm',cancel='Cancel',danger=false}){
+  return new Promise(resolve=>{
+    const m=$('mdl'), c=$('mcard'), prev=document.activeElement;
+    const icon=danger?'<path d="M12 9v4M12 17h.01M10.3 3.9L2.4 18a2 2 0 001.7 3h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/>':'<path d="M5 12.5l4.5 4.5L19 7.5"/>';
+    c.innerHTML=`<div class="mic ${danger?'danger':''}"><svg viewBox="0 0 24 24">${icon}</svg></div><h3>${esc(title)}</h3>
+      ${rows.length?`<div class="mrows">${rows.map(r=>`<div><span>${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join('')}</div>`:''}
+      ${note?`<p class="mnote">${esc(note)}</p>`:''}
+      <div class="mbtns"><button class="cta alt" id="mno">${esc(cancel)}</button><button class="cta" id="myes"${danger?' style="background:#B3261E"':''}>${esc(ok)}</button></div>`;
+    m.hidden=false;
+    const key=e=>{if(e.key==='Escape')done(false)};
+    const done=v=>{m.hidden=true;document.removeEventListener('keydown',key);if(prev&&prev.focus)prev.focus();resolve(v)};
+    document.addEventListener('keydown',key);
+    $('mno').onclick=()=>done(false); $('myes').onclick=()=>done(true); m.onclick=e=>{if(e.target===m)done(false)};
+    $('myes').focus();
+  });
+}
+async function createOrder(){
+  const btn=$('cbtn'), err=$('err'); err.textContent='';
+  const raw=$('amt').value, v=Number(raw);
+  if(!raw){err.textContent='Enter the amount you want to buy.';return}
+  if(!(v>=minInr&&v<=maxInr)){err.textContent=`Enter an amount between ₹${fmt(minInr,0)} and ₹${fmt(maxInr,0)}.`;return}
+  const go=await ask({title:'Confirm your order',rows:[['You pay','₹'+fmt(v)],['You receive',fmt(v/buyRate,4)+' USDT'],['Rate','₹'+buyRate+' per USDT']],note:'Next you will get a UPI QR code. Pay exactly this amount.',ok:'Place order'});
+  if(!go)return;
+  btn.disabled=true; btn.textContent='Creating order…';
+  try{
+    const res=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':idem},body:JSON.stringify({inr:v})});
+    const o=await res.json();
+    if(!res.ok){
+      err.textContent=o.error||'Could not create the order. Please try again.';
+      if(o.code==='QUEUE_FULL')err.insertAdjacentHTML('afterend','<button class="cta alt" onclick="showOrders()">View my orders</button>');
+      btn.disabled=false; btn.textContent='Create order'; return;
+    }
+    idem=uid(); $('sheet').classList.add('on'); waiting(o);
+  }catch(e){
+    err.textContent='Cannot reach the server. Check that it is running, then try again.';
+    btn.disabled=false; btn.textContent='Create order';
+  }
+}
+function stepper(n){return `<div class="steps">${['Order placed','In queue','Credited'].map((t,i)=>`<div class="st ${i<n?'done':i==n?'now':''}"><i></i>${t}</div>`).join('')}</div>`}
+function summary(o){return `<div class="box">Order<b>#${o.id}</b><br>You pay<b>₹${fmt(o.inr)}</b><br>You receive<b>${fmt(o.usdt,4)} USDT</b></div>`}
+
+const payBlock=o=>{
+  const link=o.pay.link.replace(/&/g,'&amp;'), mobile=/Android|iPhone|iPad/i.test(navigator.userAgent);
+  return `<div class="payq"><img src="/api/orders/${o.id}/qr.svg" alt="UPI QR code" width="200" height="200">
+  <p class="mut" style="margin-top:8px">Scan with any UPI app and pay exactly <b>₹${fmt(o.inr)}</b></p>
+  <div class="upiid"><span>${o.pay.upiId}</span><button onclick="copyUpi('${o.pay.upiId}',this)">Copy</button></div>
+  ${mobile?`<a class="cta" href="${link}" style="display:block;text-decoration:none;text-align:center">Pay with UPI app</a>`:''}</div>`;
+};
+const utrBlock=o=>`<div class="utr"><label class="mut" for="utr">After paying, enter the 12-digit UPI reference number (UTR) from your app</label>
+  <input id="utr" inputmode="numeric" maxlength="12" placeholder="12-digit UTR" oninput="numOnly(this)" autocomplete="off">
+  <p class="err" id="uerr" role="alert"></p>
+  <button class="cta" id="ubtn" onclick="submitUtr('${o.id}')">I have paid</button></div>`;
+
+function waiting(o){
+  const sent=o.paymentSubmitted, pay=o.pay;
+  F.innerHTML=`<div class="center"><h2>Processing your order</h2>
+  <p class="mut" id="qmsg">${qText(o.queuePosition,sent)}</p>
+  ${stepper(1)}
+  ${pay&&!sent?payBlock(o):''}
+  ${summary(o)}
+  ${!pay&&!sent?'<p class="err">Payment details are not set up yet. Please contact support.</p>':''}
+  ${pay&&!sent?utrBlock(o):''}
+  ${sent?'':`<button class="cta alt" onclick="cancelOrder('${o.id}')">Cancel order</button>`}
+  <button class="cta alt" onclick="closeSheet()">Back to home</button></div>`;
+  clearInterval(timer);
+  timer=setInterval(async()=>{
+    try{
+      const s=await fetch('/api/orders/'+o.id).then(r=>r.json());
+      if(s.status==='completed'){clearInterval(timer);timer=null;refresh();success(s)}
+      else if(s.status==='cancelled'){clearInterval(timer);timer=null;cancelled(s)}
+      else if($('qmsg'))$('qmsg').textContent=qText(s.queuePosition,s.paymentSubmitted);
+    }catch(e){}
+  },3000);
+}
+const qText=(p,sent)=>sent?`Payment submitted. Your USDT is credited once we confirm the payment. You are #${p} in the queue.`:`Pay exactly the amount shown below. You are #${p} in the queue.`;
+function numOnly(el){el.value=el.value.replace(/\D/g,'')}
+async function submitUtr(id){
+  const v=$('utr').value, err=$('uerr'), btn=$('ubtn'); err.textContent='';
+  if(!/^\d{12}$/.test(v)){err.textContent='Enter the 12-digit UPI reference number (UTR) shown in your payment app.';return}
+  btn.disabled=true; btn.textContent='Submitting…';
+  try{
+    const res=await fetch('/api/orders/'+id+'/paid',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({utr:v})});
+    const o=await res.json();
+    if(!res.ok){err.textContent=o.error||'Could not submit. Please try again.';btn.disabled=false;btn.textContent='I have paid';return}
+    waiting(o);
+  }catch(e){err.textContent='Cannot reach the server. Please try again.';btn.disabled=false;btn.textContent='I have paid'}
+}
+function copyUpi(t,btn){
+  const done=()=>{btn.textContent='Copied';setTimeout(()=>btn.textContent='Copy',1500)};
+  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(t).then(done)}
+  else{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');done()}catch(e){}a.remove()}
+}
+async function cancelOrder(id){
+  if(!await ask({title:'Cancel this order?',note:'If you already paid, do not cancel. Contact support with your order ID instead.',ok:'Yes, cancel',cancel:'Keep order',danger:true}))return;
+  const r=await fetch('/api/orders/'+id+'/cancel',{method:'POST'});
+  if(r.ok){clearInterval(timer);timer=null;cancelled()}
+}
+function cancelled(o){
+  const why=o&&o.failReason;
+  F.innerHTML=`<div class="center"><div class="mic danger" style="margin:6px auto 14px"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></div>
+  <h2>${why?'Order failed':'Order cancelled'}</h2>
+  ${why?`<div class="warn"><b>Reason</b><br>${esc(why)}</div><p class="mut" style="margin:8px 0">If you already paid, contact support and share order ID #${esc(o.id)}.</p>`:'<p class="mut" style="margin:8px 0">No payment was taken. You can place a new order anytime.</p>'}
+  <button class="cta" onclick="closeSheet()">Back to home</button></div>`;
+}
+function success(o){
+  F.innerHTML=`<div class="center"><div class="tick-ok"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+  <h2>Payment successful</h2><p class="mut" style="margin-top:6px">${fmt(o.usdt,4)} USDT added to your balance</p>
+  ${stepper(3)}${summary(o)}<button class="cta" onclick="closeSheet()">Done</button></div>`;
+}
+function openMenu(){document.body.classList.add('menu-on')}
+function closeMenu(){document.body.classList.remove('menu-on')}
+function menuGo(fn){closeMenu();clearInterval(timer);timer=null;fn();$('sheet').classList.add('on')}
+
+async function showOrders(){
+  F.innerHTML=`<h2>Your orders</h2><p class="mut" style="margin-top:8px">Loading…</p>`;
+  const list=await fetch('/api/orders').then(r=>r.json()); window._orders=list;
+  const wds=await fetch('/api/withdrawals').then(r=>r.json()).catch(()=>[]);
+  const label={processing:'Processing',completed:'Completed',cancelled:'Cancelled'};
+  F.innerHTML=`<h2>Your orders</h2>`+(list.length
+    ?`<div class="olist">${list.map((o,i)=>`<button class="ord" onclick="openOrder(${i})"><span><b>₹${fmt(o.inr)}</b><small>${fmt(o.usdt,4)} USDT, order #${o.id}</small>${o.failReason?`<small class="why">Reason: ${esc(o.failReason)}</small>`:''}</span><span class="badge ${o.failReason?'failed':o.status}">${o.failReason?'Failed':label[o.status]}</span></button>`).join('')}</div>`
+    :`<p class="mut" style="margin:10px 0">No orders yet. Buy USDT to place your first order.</p>`)
+    +(wds.length?`<h2 style="margin-top:18px;font-size:18px">Withdrawals</h2>${wds.map(w=>`<div class="ord" style="cursor:default"><span><b>${fmt(w.usdt,4)} USDT</b><small>${short(w.address)}</small>${w.status==='rejected'?`<small class="why">${w.failReason?'Reason: '+esc(w.failReason)+'. ':''}Returned to your balance.</small>`:''}</span><span class="badge ${wcls[w.status]}">${wlab[w.status]}</span></div>`).join('')}`:'')
+    +`<button class="cta alt" style="margin-top:14px" onclick="closeSheet()">Back</button>`;
+}
+function openOrder(i){const o=_orders[i]; if(o.status==='processing')waiting(o); else if(o.status==='completed')success(o); else if(o.status==='cancelled')cancelled(o)}
+
+function showSupport(){
+  const links=[];
+  if(support.whatsapp)links.push(`<a class="sup" href="https://wa.me/${support.whatsapp}" target="_blank" rel="noopener">Chat on WhatsApp</a>`);
+  if(support.email)links.push(`<a class="sup" href="mailto:${support.email}">Email ${support.email}</a>`);
+  F.innerHTML=`<h2>Contact support</h2><p class="mut" style="margin-top:6px">Include your order ID so we can find your payment quickly.</p>
+  ${links.join('')||'<p class="mut" style="margin-top:14px">Support contact is not set up yet. Set SUPPORT_EMAIL or SUPPORT_WHATSAPP on the server.</p>'}
+  <button class="cta alt" onclick="closeSheet()">Back</button>`;
+}
+
+function showReview(){
+  stars=0;
+  F.innerHTML=`<h2>Write a review</h2><p class="mut" style="margin-top:6px">How was your experience with TrustedMiners?</p>
+  <div class="stars" id="stars">${[1,2,3,4,5].map(n=>`<button aria-label="${n} stars" onclick="setStars(${n})">★</button>`).join('')}</div>
+  <textarea id="rtext" maxlength="500" placeholder="Tell us what went well or what we can improve"></textarea>
+  <p class="err" id="rerr" role="alert"></p>
+  <button class="cta" onclick="sendReview()">Submit review</button><button class="cta alt" onclick="closeSheet()">Cancel</button>`;
+}
+function setStars(n){stars=n;[...$('stars').children].forEach((b,i)=>b.classList.toggle('on',i<n))}
+async function sendReview(){
+  if(!stars){$('rerr').textContent='Pick a star rating first.';return}
+  const res=await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rating:stars,text:$('rtext').value})});
+  if(!res.ok){$('rerr').textContent=(await res.json()).error;return}
+  F.innerHTML=`<div class="center"><div class="tick-ok"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><h2>Thanks for your review</h2><p class="mut" style="margin:6px 0 4px">It helps us improve.</p><button class="cta" onclick="closeSheet()">Done</button></div>`;
+}
+let chains=[];
+function showUnavailable(name){
+  F.innerHTML=`<div class="center"><div class="ico" style="margin:6px auto 14px;width:64px;height:64px;border-radius:20px"><svg viewBox="0 0 24 24" style="width:30px;height:30px"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+  <h2>${name}</h2><p class="mut" style="margin:8px 0 4px">This feature is currently unavailable. Please check back later.</p>
+  <button class="cta" onclick="closeSheet()">Back to home</button></div>`;
+}
+function showDeposit(){
+  F.innerHTML=`<h2>Deposit USDT</h2><p class="mut" style="margin-top:6px">Currently available chains</p>
+  ${chains.map((c,i)=>`<button class="ord" onclick="showChain(${i})"><span><b>${c.short}</b><small>${c.name}</small></span><span class="badge processing">USDT</span></button>`).join('')||'<p class="mut" style="margin:14px 0">No chains are available right now.</p>'}
+  <button class="cta alt" style="margin-top:14px" onclick="closeSheet()">Back</button>`;
+}
+function showChain(i){
+  const c=chains[i];
+  F.innerHTML=`<h2>Deposit via ${c.short}</h2><p class="mut" style="margin-top:6px">${c.name}</p>
+  <div class="upiid" style="margin-top:16px"><span>${c.address}</span><button onclick="copyUpi('${c.address}',this)">Copy</button></div>
+  <div class="warn">Send only <b>USDT</b> on the <b>${c.short} (BEP20)</b> network to this address. Other coins or other networks can be lost permanently.</div>
+  <button class="cta alt" onclick="showDeposit()">Back to chains</button>`;
+}
+const short=a=>a.slice(0,8)+'…'+a.slice(-6);
+const wlab={pending:'Pending',completed:'Sent',rejected:'Failed'}, wcls={pending:'processing',completed:'completed',rejected:'failed'};
+async function showWithdraw(){
+  try{const b=await fetch('/api/balance').then(r=>r.json());balUsdt=b.usdt}catch(e){}
+  const low=balUsdt<minWd;
+  F.innerHTML=`<h2>Withdraw USDT</h2><p class="mut" style="margin-top:6px">Select your chain</p>
+  <div class="ord" style="cursor:default;border-color:var(--royal);background:var(--ice)"><span><b>BSC</b><small>BNB Smart Chain (BEP20)</small></span><span class="badge completed">Selected</span></div>
+  <div class="get" style="margin-top:14px"><span>Available balance</span><b>${fmt(balUsdt,4)} USDT</b></div>
+  <label class="field" style="margin:14px 0 8px"><input id="wamt" type="number" inputmode="decimal" placeholder="Amount in USDT" aria-label="Amount in USDT"><button class="mini" onclick="setMax()">Max</button></label>
+  <label class="field" style="margin:0 0 8px"><input id="waddr" type="text" placeholder="Paste your BSC (BEP20) wallet address" aria-label="Wallet address" autocomplete="off" spellcheck="false" style="font-size:15px"></label>
+  <p class="err" id="werr" role="alert">${low?`You need at least ${minWd} USDT to withdraw. Your balance is ${fmt(balUsdt,4)} USDT.`:''}</p>
+  <button class="cta" id="wbtn" onclick="confirmWithdraw()">Confirm withdrawal</button>
+  <button class="cta alt" onclick="closeSheet()">Back</button>`;
+}
+function setMax(){$('wamt').value=Math.floor(balUsdt*1e6)/1e6}
+async function confirmWithdraw(){
+  const err=$('werr'), btn=$('wbtn'); err.textContent='';
+  const amt=Number($('wamt').value), addr=$('waddr').value.trim();
+  if(!(amt>0)){err.textContent='Enter the amount you want to withdraw.';return}
+  if(amt<minWd){err.textContent=`Minimum withdrawal is ${minWd} USDT.`;return}
+  if(amt>balUsdt){err.textContent=`Insufficient balance. You have ${fmt(balUsdt,4)} USDT available.`;return}
+  if(!/^0x[a-fA-F0-9]{40}$/.test(addr)){err.textContent='Enter a valid BSC (BEP20) wallet address. It starts with 0x and is 42 characters long.';return}
+  if(!await ask({title:'Confirm withdrawal',rows:[['Amount',amt+' USDT'],['Network','BSC (BEP20)'],['To address',addr]],note:'Check the address carefully. Crypto sent to a wrong address cannot be recovered.',ok:'Withdraw'}))return;
+  btn.disabled=true; btn.textContent='Submitting…';
+  try{
+    const res=await fetch('/api/withdrawals',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chain:'bsc',amount:amt,address:addr})});
+    const w=await res.json();
+    if(!res.ok){err.textContent=w.error||'Could not submit the withdrawal.';btn.disabled=false;btn.textContent='Confirm withdrawal';return}
+    refresh(); wdDone(w);
+  }catch(e){err.textContent='Cannot reach the server. Please try again.';btn.disabled=false;btn.textContent='Confirm withdrawal'}
+}
+function wdDone(w){
+  F.innerHTML=`<div class="center"><div class="tick-ok"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+  <h2>Withdrawal requested</h2><p class="mut" style="margin:6px 0">${fmt(w.usdt,4)} USDT on BSC (BEP20)</p>
+  <div class="box">Status<b>Pending</b><br>To<b>${short(w.address)}</b></div>
+  <p class="mut" style="margin:10px 0">We send it manually. Track it in Your orders.</p>
+  <button class="cta" onclick="closeSheet()">Done</button></div>`;
+}
+let authMode='login', authed=false;
+const setWho=e=>{$('who').textContent=e||''};
+function showAuth(){authed=false;clearInterval(timer);timer=null;$('sheet').classList.remove('on');closeMenu();$('auth').classList.add('on')}
+function hideAuth(){authed=true;$('auth').classList.remove('on')}
+function setAuthMode(m){
+  authMode=m; const reset=m==='reset';
+  $('tabs').hidden=reset; $('tabL').classList.toggle('on',m==='login'); $('tabR').classList.toggle('on',m==='register');
+  $('acode').hidden=!reset; $('ainfo').hidden=!reset; $('asup').hidden=!reset; $('aback').hidden=!reset; $('aforgot').hidden=m!=='login';
+  $('abtn').textContent=authLabel();
+  $('apw').placeholder=reset?'New password (8+ characters)':'Password (8+ characters)';
+  $('apw').autocomplete=m==='login'?'current-password':'new-password';
+  $('aerr').textContent=''; $('aok').textContent='';
+  if(reset)loadSupport();
+}
+const authLabel=()=>authMode==='reset'?'Set new password':authMode==='login'?'Log in':'Create account';
+async function loadSupport(){
+  try{support=(await fetch('/api/rate').then(r=>r.json())).support||{}}catch(e){}
+  const l=[];
+  if(support.whatsapp)l.push(`<a class="sup" href="https://wa.me/${esc(support.whatsapp)}" target="_blank" rel="noopener">Message support on WhatsApp</a>`);
+  if(support.email)l.push(`<a class="sup" href="mailto:${esc(support.email)}">Email ${esc(support.email)}</a>`);
+  $('asup').innerHTML=l.join('')||'<p class="mut" style="font-size:13px">Contact the TrustedMiners support team to get a reset code.</p>';
+}
+function togglePw(b){const i=$('apw');i.type=i.type==='password'?'text':'password';b.textContent=i.type==='password'?'Show':'Hide'}
+async function submitAuth(){
+  const err=$('aerr'), btn=$('abtn'); err.textContent=''; $('aok').textContent='';
+  const email=$('aemail').value.trim(), password=$('apw').value, code=$('acode').value.trim();
+  if(!email||!password||(authMode==='reset'&&!code)){err.textContent=authMode==='reset'?'Enter your email, the reset code and a new password.':'Enter your email and password.';return}
+  btn.disabled=true; btn.textContent='Please wait…';
+  try{
+    const res=await fetch('/api/auth/'+authMode,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(authMode==='reset'?{email,code,password}:{email,password})});
+    const d=await res.json();
+    if(!res.ok){err.textContent=d.error||'Something went wrong. Please try again.';return}
+    $('apw').value=''; $('acode').value='';
+    if(authMode==='reset'){setAuthMode('login');$('aok').textContent='Password updated. Please log in with your new password.';return}
+    setWho(d.email); hideAuth(); closeSheet(); await refresh(); showBuy();
+  }catch(e){err.textContent='Cannot reach the server. Please try again.'}
+  finally{btn.disabled=false;btn.textContent=authLabel()}
+}
+async function logout(){
+  await fetch('/api/auth/logout',{method:'POST'}).catch(()=>{});
+  setWho('');$('usdt').textContent='0.00';$('inr').textContent='0.00';setAuthMode('login');showAuth();
+}
+function showPassword(){
+  F.innerHTML=`<h2>Change password</h2><p class="mut" style="margin-top:6px">Your other devices will be logged out.</p>
+  <input class="pin" id="pcur" type="password" autocomplete="current-password" placeholder="Current password">
+  <input class="pin" id="pnew" type="password" autocomplete="new-password" placeholder="New password (8+ characters)">
+  <p class="err" id="perr" role="alert"></p>
+  <button class="cta" id="pbtn" onclick="savePassword()">Update password</button>
+  <button class="cta alt" onclick="closeSheet()">Back</button>`;
+}
+async function savePassword(){
+  const err=$('perr'), btn=$('pbtn'); err.textContent='';
+  const current=$('pcur').value, next=$('pnew').value;
+  if(!current||!next){err.textContent='Enter your current and new password.';return}
+  btn.disabled=true; btn.textContent='Saving…';
+  try{
+    const res=await fetch('/api/auth/password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({current,next})});
+    const d=await res.json();
+    if(!res.ok){err.textContent=d.error||'Could not change the password.';btn.disabled=false;btn.textContent='Update password';return}
+    F.innerHTML=`<div class="center"><div class="tick-ok"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><h2>Password updated</h2><p class="mut" style="margin:6px 0 4px">Other devices were logged out.</p><button class="cta" onclick="closeSheet()">Done</button></div>`;
+  }catch(e){err.textContent='Cannot reach the server. Please try again.';btn.disabled=false;btn.textContent='Update password'}
+}
+async function boot(){
+  let r=null; try{r=await fetch('/api/me')}catch(e){}
+  if(!r){$('offline').hidden=false;return}
+  if(r.ok){setWho((await r.json()).email);hideAuth();await refresh();showBuy()} else showAuth();
+}
+boot(); setInterval(()=>{if(authed)refresh()},30000);
+</script></body></html>

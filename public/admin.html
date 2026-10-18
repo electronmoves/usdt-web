@@ -1,0 +1,138 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>TrustedMiners Admin</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:#F5F9FF;color:#0A2347;max-width:700px;margin:0 auto;padding:20px}
+h1{color:#0F3470;font-size:22px}h2{color:#0F3470;font-size:18px;margin-top:28px}
+input,select,textarea{padding:12px;border:1.5px solid #D6E3F7;border-radius:12px;font:inherit;font-size:15px;background:#fff;color:#0A2347}
+input:focus,textarea:focus{outline:0;border-color:#1F5FD6;box-shadow:0 0 0 4px rgba(31,95,214,.15)}
+button{padding:12px 16px;border:0;border-radius:12px;background:#1F5FD6;color:#fff;font-weight:700;cursor:pointer;font-size:15px}
+button.alt{background:#EAF2FF;color:#0F3470;margin-left:6px}
+button.danger{background:#B3261E}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid #D6E3F7;border-radius:14px;padding:14px;margin-top:10px}
+.row.ready{border-color:#1F5FD6;box-shadow:0 0 0 3px rgba(31,95,214,.15)}
+small{color:#5B6F8F}.utr{font-weight:700;color:#1F5FD6}.addr{font-family:monospace;word-break:break-all;font-size:13px}.why{color:#8C1D18}
+.srow{display:flex;gap:8px;flex-wrap:wrap}.srow input{flex:1;min-width:180px}
+.tag{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:#EAF2FF;color:#1F5FD6;margin-left:6px}
+.tag.completed{background:#1F5FD6;color:#fff}.tag.failed{background:#FDECEA;color:#8C1D18}
+[hidden]{display:none!important}
+.mdl{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(10,35,71,.55);backdrop-filter:blur(6px);animation:fade .2s}
+.mcard{width:100%;max-width:440px;background:#fff;border-radius:24px;padding:24px;box-shadow:0 30px 70px -20px rgba(10,35,71,.6);animation:pop .28s cubic-bezier(.2,1.2,.4,1)}
+@keyframes fade{from{opacity:0}}@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.94)}}
+.mcard h3{margin:0 0 8px;color:#0F3470;font-size:20px}.mcard p{margin:6px 0;line-height:1.5}
+.mcard textarea{width:100%;margin-top:8px;resize:vertical}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chip{padding:7px 12px;font-size:13px;background:#EAF2FF;color:#0F3470;border-radius:999px}
+.merr{color:#8C1D18;font-weight:600;font-size:14px;min-height:0}.merr:empty{display:none}
+.mbtns{display:flex;gap:10px;margin-top:16px}.mbtns button{flex:1;margin:0}
+.code{font:700 30px/1.2 monospace;letter-spacing:3px;text-align:center;background:#EAF2FF;border-radius:14px;padding:16px;margin:12px 0;color:#0F3470;user-select:all}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0F3470;color:#fff;padding:12px 18px;border-radius:14px;font-weight:600;z-index:60;box-shadow:0 10px 30px rgba(10,35,71,.4)}
+.toast.bad{background:#B3261E}
+</style></head><body>
+<h1>Admin</h1>
+<p><input id="k" type="password" placeholder="Admin key" aria-label="Admin key" style="width:60%"> <button onclick="load()">Load</button></p>
+<p><small>Updates every 10 seconds. Always check your bank or wallet before confirming anything.</small></p>
+<h2>Buy orders (UPI)</h2><div id="list"></div>
+<h2>Withdrawals</h2><div id="wlist"></div>
+<h2>Forgot password help</h2>
+<p><small>When a user asks for a reset, make sure it is really them. Then create a one-time code and send it to them. It works for 30 minutes.</small></p>
+<div class="srow"><input id="remail" type="email" placeholder="User's account email"><button onclick="makeReset()">Create reset code</button></div>
+<h2>Search history</h2>
+<p><small>Every order and withdrawal is kept forever, even after you mark it paid or failed.</small></p>
+<div class="srow">
+  <select id="stype" onchange="fillStatus()"><option value="orders">Buy orders</option><option value="withdrawals">Withdrawals</option></select>
+  <select id="sstatus"></select>
+  <input id="sq" placeholder="Order ID, UTR, amount, email or wallet address" onkeydown="if(event.key==='Enter')search()">
+  <button onclick="search()">Search</button>
+</div>
+<div id="slist"></div>
+<div class="mdl" id="mdl" hidden><div class="mcard" id="mcard"></div></div>
+<script>
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $=id=>document.getElementById(id), H=()=>({'x-admin-key':$('k').value.trim()});
+const post=(url,body)=>fetch(url,{method:'POST',headers:{...H(),'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+const when=t=>new Date(t).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'});
+
+function toast(msg,bad){const t=document.createElement('div');t.className='toast'+(bad?' bad':'');t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2800)}
+
+// Popup: returns null if cancelled, true (no field) or the typed text (with a field)
+function modal(o){
+  return new Promise(res=>{
+    const m=$('mdl'),c=$('mcard');
+    c.innerHTML=`<h3>${esc(o.title)}</h3>${o.html||''}
+      ${o.chips?.length?`<div class="chips">${o.chips.map(t=>`<button type="button" class="chip">${esc(t)}</button>`).join('')}</div>`:''}
+      ${o.field?`<textarea id="mf" rows="2" maxlength="200" placeholder="${esc(o.field.placeholder||'')}"></textarea>`:''}
+      <p class="merr" id="merr"></p>
+      <div class="mbtns">${o.noCancel?'':'<button class="alt" id="mno">Cancel</button>'}<button id="myes" class="${o.danger?'danger':''}">${esc(o.ok||'Confirm')}</button></div>`;
+    m.hidden=false;
+    c.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{$('mf').value=b.textContent;$('mf').focus()});
+    const close=v=>{m.hidden=true;document.removeEventListener('keydown',key);res(v)};
+    const key=e=>{if(e.key==='Escape')close(null)};
+    document.addEventListener('keydown',key);
+    if($('mno'))$('mno').onclick=()=>close(null);
+    $('myes').onclick=()=>{
+      if(o.field){const v=$('mf').value.trim();if(o.field.required&&v.length<3){$('merr').textContent='Write a short reason (at least 3 characters).';return}close(v)}
+      else close(true)
+    };
+    if(o.field)$('mf').focus(); else $('myes').focus();
+  });
+}
+async function send(url,body){const r=await post(url,body);if(!r.ok)toast((await r.json()).error||'Failed',true);else toast('Done');load()}
+
+async function payOrder(id,inr,utr){
+  const ok=await modal({title:'Confirm payment received',html:`<p>Did <b>₹${inr.toLocaleString('en-IN')}</b> arrive in your account${utr?` with UTR <b>${esc(utr)}</b>`:' (the user gave no UTR)'}?</p><p><small>The user's USDT balance will be credited.</small></p>`,ok:'Yes, mark paid'});
+  if(ok)send(`/api/admin/orders/${id}/complete`);
+}
+async function failOrder(id){
+  const why=await modal({title:'Mark order as failed',html:'<p>The user will see this reason.</p>',chips:['Payment not received','Wrong amount paid','Invalid UTR','Duplicate order'],field:{placeholder:'Reason shown to the user',required:true},ok:'Mark failed',danger:true});
+  if(why)send(`/api/admin/orders/${id}/cancel`,{reason:why});
+}
+async function sendWd(id){
+  const tx=await modal({title:'Mark withdrawal as sent',html:'<p>Send the USDT from your wallet first. Then paste the transaction hash (optional).</p>',field:{placeholder:'0x… transaction hash (optional)',required:false},ok:'Mark sent'});
+  if(tx!==null)send(`/api/admin/withdrawals/${id}/complete`,{txid:tx});
+}
+async function failWd(id){
+  const why=await modal({title:'Mark withdrawal as failed',html:'<p>The user sees this reason and the amount returns to their balance.</p>',chips:['Invalid wallet address','Wrong network','Please contact support'],field:{placeholder:'Reason shown to the user',required:true},ok:'Mark failed',danger:true});
+  if(why)send(`/api/admin/withdrawals/${id}/reject`,{reason:why});
+}
+async function makeReset(){
+  const email=$('remail').value.trim(); if(!email){toast('Enter the account email first',true);return}
+  const r=await post('/api/admin/reset-code',{email}), d=await r.json();
+  if(!r.ok){toast(d.error,true);return}
+  await modal({title:'Reset code ready',html:`<p>Send this code to the account owner. It works once and expires in ${d.minutes} minutes.</p><div class="code">${esc(d.code)}</div><p><small>The user enters it under "Forgot password?" on the login screen.</small></p>`,ok:'Done',noCancel:true});
+}
+
+async function load(){
+  $('list').textContent='Loading…';
+  let r,d,r2,w;
+  try{[r,r2]=await Promise.all([fetch('/api/admin/queue',{headers:H()}),fetch('/api/admin/withdrawals',{headers:H()})]);d=await r.json();w=await r2.json()}
+  catch(e){$('list').textContent='Cannot reach the server. Open this page from your server address (localhost), not the VS Code preview.';return}
+  if(!r.ok){$('list').textContent=d.error;$('wlist').textContent='';return}
+  $('list').innerHTML=d.length?d.map(o=>`<div class="row ${o.utr?'ready':''}"><div><b>#${o.queuePosition} ₹${o.inr.toLocaleString('en-IN')}</b> → ${o.usdt} USDT<br>
+  <small>order ${o.id}</small><br><small>user ${esc(o.email||'unknown')}</small><br>${o.utr?`UTR: <span class="utr">${o.utr}</span>`:'<small>No UTR submitted yet</small>'}</div>
+  <div><button onclick="payOrder('${o.id}',${o.inr},'${o.utr||''}')">Mark paid</button><button class="alt" onclick="failOrder('${o.id}')">Mark failed</button></div></div>`).join(''):'The queue is empty. Paid and failed orders are not listed here. Use Search history.';
+  $('wlist').innerHTML=w.length?w.map(x=>`<div class="row"><div><b>${x.usdt} USDT</b> on BSC (BEP20)<br><small>request ${x.id}</small><br><small>user ${esc(x.email||'unknown')}</small><br><span class="addr">${x.address}</span></div>
+  <div><button onclick="sendWd('${x.id}')">Mark sent</button><button class="alt" onclick="failWd('${x.id}')">Mark failed</button></div></div>`).join(''):'No pending withdrawals.';
+}
+
+const ST={orders:['processing','completed','cancelled'],withdrawals:['pending','completed','rejected']};
+function fillStatus(){$('sstatus').innerHTML='<option value="">All statuses</option>'+ST[$('stype').value].map(s=>`<option>${s}</option>`).join('')}
+fillStatus();
+function sres(type,x){
+  const failed=x.status==='cancelled'||x.status==='rejected', tag=`<span class="tag ${failed?'failed':x.status}">${failed?'failed':x.status}</span>`;
+  const times=`<small>created ${when(x.createdAt)}, last update ${when(x.updatedAt)}</small>`;
+  const who=`<small>user ${esc(x.email||'unknown')}</small><br>`, why=x.failReason?`<small class="why">Reason: ${esc(x.failReason)}</small><br>`:'';
+  return type==='orders'
+    ?`<div class="row"><div><b>₹${x.inr.toLocaleString('en-IN')}</b> → ${x.usdt} USDT ${tag}<br><small>order ${x.id}</small><br>${who}${x.utr?`UTR: <span class="utr">${x.utr}</span><br>`:''}${why}${times}</div></div>`
+    :`<div class="row"><div><b>${x.usdt} USDT</b> on BSC ${tag}<br><small>request ${x.id}</small><br>${who}<span class="addr">${x.address}</span><br>${x.txid?`<small>tx ${x.txid}</small><br>`:''}${why}${times}</div></div>`;
+}
+async function search(){
+  const out=$('slist'); out.textContent='Searching…';
+  const type=$('stype').value, qs=new URLSearchParams({type,status:$('sstatus').value,q:$('sq').value.trim()});
+  try{
+    const r=await fetch('/api/admin/search?'+qs,{headers:H()}), d=await r.json();
+    if(!r.ok){out.textContent=d.error;return}
+    out.innerHTML=d.length?d.map(x=>sres(type,x)).join(''):'Nothing found.';
+  }catch(e){out.textContent='Cannot reach the server. Open this page from your server address (localhost), not the VS Code preview.'}
+}
+setInterval(()=>{if($('k').value)load()},10000);
+</script></body></html>
