@@ -19,7 +19,7 @@ const CFG = {
   BUY_RATE: Number(process.env.BUY_RATE || 102.5),     // INR per 1 USDT
   MIN_USDT: Number(process.env.MIN_USDT || 1),          // minimum buy, in USDT
   SELL_RATE: Number(process.env.SELL_RATE || 100),      // sell price shown on the site
-  MIN_WITHDRAW: Number(process.env.MIN_WITHDRAW || 1),  // minimum withdrawal, in USDT
+  MIN_WITHDRAW: Number(process.env.MIN_WITHDRAW || 5),  // minimum withdrawal, in USDT
   MAX_INR: Number(process.env.MAX_INR || 10000),
   MAX_OPEN: Number(process.env.MAX_OPEN || 5),                                          // max orders one user can keep in the queue
   ADMIN_KEY: process.env.ADMIN_KEY || crypto.randomBytes(12).toString('hex'),
