@@ -17,7 +17,7 @@ const QRCode = require('qrcode');
 const CFG = {
   PORT: Number(process.env.PORT || 3000),
   BUY_RATE: Number(process.env.BUY_RATE || 102.5),     // INR per 1 USDT
-  MIN_USDT: Number(process.env.MIN_USDT || 1),          // minimum buy, in USDT
+  MIN_USDT: Number(process.env.MIN_USDT || 5),          // minimum buy, in USDT
   SELL_RATE: Number(process.env.SELL_RATE || 100),      // sell price shown on the site
   MIN_WITHDRAW: Number(process.env.MIN_WITHDRAW || 5),  // minimum withdrawal, in USDT
   MAX_INR: Number(process.env.MAX_INR || 10000),
