@@ -186,7 +186,9 @@ app.use((req, res, next) => {
 });
 app.use(express.json({ limit: '10kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
-app.get('/admin', (req, res) => res.redirect('/admin.html')); // Friendly admin URL
+// Obscure admin entry route; the admin APIs still require the admin key.
+app.get('/tm-console-8d41f7a6c9b35e2a', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get(['/admin', '/admin.html'], (req, res) => res.sendStatus(404));
 
 const hits = new Map();
 const limiter = (max, windowMs = 60000) => (req, res, next) => {
