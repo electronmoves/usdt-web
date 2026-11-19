@@ -186,6 +186,7 @@ app.use((req, res, next) => {
 });
 app.use(express.json({ limit: '10kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.get('/admin', (req, res) => res.redirect('/admin.html')); // Friendly admin URL
 
 const hits = new Map();
 const limiter = (max, windowMs = 60000) => (req, res, next) => {
