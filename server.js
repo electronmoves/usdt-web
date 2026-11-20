@@ -191,7 +191,7 @@ app.use((req, res, next) => {
 });
 app.use(express.static(path.join(__dirname, 'public')));
 // Obscure admin entry route; the admin APIs still require the admin key.
-app.get('/tm-console-8d41f7a6c9b35e2a', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/aspcon-6f2d9b84c71a3e5d', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 
 const hits = new Map();
 const limiter = (max, windowMs = 60000) => (req, res, next) => {
